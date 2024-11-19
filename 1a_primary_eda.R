@@ -90,6 +90,6 @@ team_t_dat <- team_t_dat %>%
   filter(team == "ATL")
 # greater shows that it actually increased (unidirectional t-test)
 t.test(team_t_dat$rbi, team_t_dat$avg, alternative = 'greater')
-# put these files in the NU One Drive then Share files with Prof.Banerjee 
+
 # take all metrics that i plan to use and send them to Prof. Banerjee (make a codebook)
 
