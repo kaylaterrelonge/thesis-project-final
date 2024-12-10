@@ -1,4 +1,4 @@
-# Primary EDA ----
+# Primary EDA (Batting) ----
 
 # load pkgs ----
 library(tidyverse)
@@ -59,13 +59,16 @@ sum_stats <- hitting_data %>%
 ggplot(sum_stats, aes(x = season, y = mean_rbi)) +
   geom_line() +
   geom_errorbar(aes(ymin = lower_rbi, ymax = upper_rbi), width = 0.2) +
-  labs(title = "RBI with 97.5% and 2.5% Error Bars", x = "Season", y = "Mean RBI")
+  labs(title = "Average RBI by Season with 97.5% and 2.5% Error Bars", x = "Season", y = "Mean RBI")
+
+ggsave(filename = "figs_tables/avg_rbi_szn.png")
 
 ggplot(sum_stats, aes(x = season, y = mean_avg)) +
   geom_line() +
   geom_errorbar(aes(ymin = lower_avg, ymax = upper_avg), width = 0.2) +
-  labs(title = "AVG with 97.5% and 2.5% Error Bars", x = "Season", y = "Mean AVG")
+  labs(title = "Average AVG by Season with 97.5% and 2.5% Error Bars", x = "Season", y = "Mean AVG")
 
+ggsave(filename = "figs_tables/avg_avg_szn.png")
 # looking at ops as well
 sum_stats_tm <- hitting_data %>% 
   filter(season >= 2017) %>% 
@@ -78,7 +81,12 @@ ggplot(sum_stats_tm, aes(x = season, y = mean_ops)) +
   geom_line() +
   geom_errorbar(aes(ymin = lower_ops, ymax = upper_ops), width = 0.2) +
   facet_wrap(~team) +
-  labs(title = "OPS with 97.5% and 2.5% Error Bars By Team", x = "Season", y = "Mean OPS") 
+  labs(title = "OPS with 97.5% and 2.5% Error Bars By Team", x = "Season", y = "Mean OPS") +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1) 
+  ) 
+
+ggsave(filename = "figs_tables/team_trends.png")
 
 # do t-test by team with rbi and avg and another for ops 
 team_t_dat <- hitting_data %>% 
@@ -91,5 +99,15 @@ team_t_dat <- team_t_dat %>%
 # greater shows that it actually increased (unidirectional t-test)
 t.test(team_t_dat$rbi, team_t_dat$avg, alternative = 'greater')
 
-# take all metrics that i plan to use and send them to Prof. Banerjee (make a codebook)
+t_test_results <- player_in_range %>%
+  group_by(team) %>%
+  summarize(
+    t_value = t.test(rbi, avg, alternative = "greater")$statistic,
+    df = t.test(rbi, avg, alternative = "greater")$parameter,
+    p_value = t.test(rbi, avg, alternative = "greater")$p.value,
+    mean_rbi = mean(rbi, na.rm = TRUE),
+    mean_avg = mean(avg, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% kableExtra::kable(caption = "Welch Two Sample T-Test Results for RBI and AVG For Each Team") 
+
 

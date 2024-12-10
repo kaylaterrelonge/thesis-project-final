@@ -94,18 +94,28 @@ for(i in seq_along(pitching_files)){
   
 }
 
+# correcting season error
+pitching_int <- seasons %>% 
+  bind_rows() %>%  
+  filter(season >= '2016') %>% 
+  mutate(season = as.numeric(season) + 1)
+
+pitching_pre16 <- seasons %>% 
+  bind_rows() %>% 
+  filter(season < '2016')
+
 # import 2016 data
 s16_dat <-  read_rds("data/raw_data/16_pitching.rds") 
-s23_dat <-  read_rds("data/raw_data/23_pitching.rds") %>% 
-  bind_rows() %>% 
-  mutate(season = '2023')
+
 
 season_16_full <- bind_rows(s16_dat[1:3])%>% 
   mutate(season = '2016')
 
-mini_combine <- full_join(s23_dat, season_16_full)
-combined_data <- bind_rows(seasons)
-combined_data_p <- full_join(combined_data, mini_combine)
+
+mini_combine <- full_join(pitching_pre16, season_16_full) %>% 
+  mutate(season = as.numeric(season))
+
+combined_data_p <- full_join(mini_combine, pitching_int)
 
 # pitching data cleaning function
 # cleaning up first col
