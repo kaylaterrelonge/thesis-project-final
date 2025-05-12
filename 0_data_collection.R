@@ -414,13 +414,6 @@ for (i in 1:4) {
 write_rds(season_10_pitching, file = "data/raw_data/10_pitching.rds")
 
 
-
-
-
-
-
-
-
 #### 2011-szn ----
 # creating an empty list to store scrapped data
 
