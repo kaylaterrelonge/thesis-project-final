@@ -1,0 +1,125 @@
+---
+title: "Understanding the Relationship Between The Legalization of Sports Betting and MLB Performance"
+subtitle: "Independent Study 399 - Final Memo" 
+author: "Kayla Terrelonge"
+
+format:
+  html:
+    toc: true
+    self-contained: true
+
+reference-location: margin
+
+execute:
+  warning: false
+  message: false
+  echo: false
+---
+
+::: callout-note
+[Github Repo Link](https://github.com/kaylaterrelonge/thesis-project-final)
+:::
+
+## Introduction
+
+Throughout the course of this independent study, I investigated if the widespread legalization of Sports Betting in the United States impacted player performance in Major League Baseball.The work done this quarter, which will be outlined in this report, was to uncover if there was a relationship between Sports Betting legalization and Major League Baseball Player performance and if so, what kind of relationship is it. The following report will outline a brief history of Sports Betting legalization, the methods used in the data collection and analytics process, the findings thus far, and provide an explanation for the findings.
+
+## Data Collection and Cleaning
+
+The data for this project was collected directly from the Major League Baseball's website, where they produce statistics for every player since 1876. For the purposes of this project all data starting from 2000 was used, except for 2024, as the season was on-going for the duration of this project. Furthermore, only qualified player data was used. The MLB considers qualified players to be a player who either has 3.1 plate appearances per game (for hitters) or 1 inning pitched per game (for pitchers).
+
+For the data collection process, web scraping techniques were used to collect and compile all the data from the designated time frame. An issue emerged though because for each season, the MLB produces multiple tables for online layout and design purposes. To work around this, string methods and for-loops were used to implement iterative pattern matching to collect all of the necessary web addresses. Then, `read_html()` and html syntax was used to collect the proper data tables. The data for each season was separated by hitting statistics and pitching statistics, as they include different variables. All of the hitting and pitching data for a given season was compiled into either a hitting or pitching list, then saved as an R Data Sterilization, which preserves the raw state of the data.
+
+From here, the data was read in iteratively using `readr` methods. Another issue that emerged was that because the website uses a drop-down option to identify the season in question, the season variable had to be manually created during the reading and aggregating process. From there, a function was created to clean the data, as there were many issues that arose due to the way the data is formatted online. An in-depth explanation of the cleaning function will not be provided, as there is detailed code provided in the Github repo. Essentially, the function utilized repetitive pattern matching to get the data in tidy form. The final pitching and hitting data sets were saved as R Data Sterilization files.
+
+## Metrics
+
+Before diving into the methods and findings of this study, I will explain the evaluation statistics used for the study. To begin, there are a host of statistics that can quantify a player's performance in any sport. However, while this variation is great for exploratory purposes, it introduces unique challenges during evaluations because there can be many ways to classify a player as "good" or "bad". For the sake of this project, the definitions of "good" or "bad" performance is related to how their behavior supports scoring points. Scoring points help teams win games and winning games are crucial to making it to the World Series, which is the ultimate indicator of a good team with good players. Thus, basing good/bad classifications of players on scoring metrics was the most logical choice in evaluation statistics.
+
+For evaluating the performance of hitters in the MLB, the following metrics were used: Runs Batted In (RBI), Hitting Average (AVG), and On-Base Plus Slugging (OPS). An in-depth explanation about these variables can be found in the code book, which is also in the Github repo. In general these metrics measure how well a player hit the ball and was able to score for their team. During the exploratory data analysis, RBI and AVG were standardized by the number of games played in a season, to assist with hypothesis testing and visualizations. Per league standards, the higher all of these values indicate a high performing hitter.
+
+As for evaluating the performance of pitchers, the following metrics were used: Wins (W), Walks And Hits Per Inning Pitched (WHIP), Hitting Average against pitcher (AVG), and Earned Run Average (ERA). In-depth explanation of these variables can be found in the code book as well. These metrics are used to measure how easily a hitter can earn a run (i.e. score for their team). For the general trends of these metrics, a player is considered good if they have a low ERA, WHIP, AVG, and a high W.
+
+## Findings
+
+## Methods
+
+The findings outlined in this section were derived from subsetting each data set and examining trends and patterns that emerged post-widespread sports betting legalization. Widespread sports betting legalization in the United States in 2018 and by 2019, 38 states had legalized sports betting. However, as stated in the introduction, this research aims to understand how this legalization impacted player performance. For this reason the data was subsetted to include players who have been in the league since 2017 for at least three seasons. This provided a baseline for pre-legalization performance, making it easier to understand the cause behind the findings.
+
+### Hitting
+
+When examining the hitting data, almost all of the evaluation metrics showed an uptick between 2018 and 2019, indicating an increase in performance. Specifically, the average RBI and AVG per season had a significant increase in performance. These trends can be seen in the figures below, which show that between the 2018 and 2019 season, there was an increase in the average player's RBI and AVG.
+
+![](figs_tables/avg_avg_szn.png)
+
+![](figs_tables/avg_rbi_szn.png)
+
+Furthermore, the average OPS of players was evaluated by team and season to understand if this trend was caused by a few excellent players or if this was universally observed. For the majority of the MLB teams, regardless of if they were having a good streak, the increase in performance between 2018 and 2019 was observed. This can be seen in the figure below. For most of the teams, there was a clear increase from the performance observed before 2019 and from 2019 onward, even with the outlier of the pandemic season (2020 season, which was cut short.)
+
+![](figs_tables/team_trends.png)
+
+To further analyze these findings, a unidirectional Welch Two Sample T-Test was conducted between RBI and AVG for each team to understand if the trends observed from the figures were observed in terms of variance. From the table seen below, it is obvious that there is some statistical significance between the RBI and AVG for each team since 2018. This indicates that the variance observed in both variables is comparable and the upward trend observed in the figures is observed numerically as well.
+
+```{r}
+#| message: false
+library(tidyverse)
+hitting_data <- read_rds(file = 'data/clean_data/clean_hit.rds')
+
+### some initial work
+player_totals <- hitting_data %>% 
+  # sports betting legalized in after 2018 
+  filter(season >= 2017) %>% 
+  group_by(player) %>% 
+  summarise(count = n()) %>% 
+  filter(count >= 3)
+
+player_in_range <- left_join(player_totals, hitting_data) %>% 
+  filter(season >= 2017)
+
+player_in_range %>%
+  group_by(team) %>%
+  summarize(
+    t_value = t.test(rbi, avg, alternative = "greater")$statistic,
+    df = t.test(rbi, avg, alternative = "greater")$parameter,
+    p_value = t.test(rbi, avg, alternative = "greater")$p.value,
+    mean_rbi = mean(rbi, na.rm = TRUE),
+    mean_avg = mean(avg, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% kableExtra::kable(caption = "Welch Two Sample T-Test Results for RBI and AVG For Each Team") 
+
+```
+
+### Pitching
+
+As for the pitching data, there were not as obvious performance trends observed like with the hitting data. This could be due to the limited sample size of the pitching data when implementing the subsetting methods outlined earlier in this report. This limited sample size could have led to the data easily being skewed by a few outlier performances in each season.
+
+Similar to the hitting data, I was expecting to uncover a very obvious trend that supported performance increases post-widespread sports betting legalization, however there was a decrease in pitcher performance. This can be observed in the figures below, as the average ERA and AVG increased between 2018 and 2019. As a lower value for both of these metrics indicate better performance, the trends seen below indicate that pitchers were actually performing worse post sports betting legalization in comparison to their pre-sports betting legalization performance.
+
+![](figs_tables/pitching_mean_avg.png)
+
+![](figs_tables/pitching_mean_era.png)
+
+As stated at the beginning of this section, these findings are limited as there was very little pitching data, to demonstrate more widespread trends. Furthermore, because pitching is a very specialized position, each team did not have pitchers that fell within the subsetting criteria outlined above, leading to insufficient data to make full team comparisons. 
+
+## Explanation
+
+Based on the findings above, it may not seem obvious because of the trends observed with the pitching data, but since the legalization of sports betting, MLB performance has increased. While this is obvious from the figures and tables with the hitting data, it can be observed less obviously with the pitching data. Pitcher performance is heavily reliant on the player at bat. So, if the hitters are performing better, the pitchers will inadvertently perform worse, as many of their performance metrics are reliant on how well they were at preventing scoring opportunities. Thus, the trends observed with the pitching data support the findings of the hitting data, meaning there was an uptick in player performance between the 2018 and 2019 season that has been maintained through the 2023 season.
+
+When looking at these findings, it can be confusing to interpret at first. We see that the hitters in the league started to perform better after the legalization of sports betting and this increase in performance was maintained even during the post-pandemic seasons. Based on this, I determined that this performance uptick was due to the legalization of sports betting. When looking at the conditions between the 2018 and 2019 season, many of the league rules and regulations remained the same. The only changes were related to increasing the speed of the game. So, when thinking about what occurred between the 2018 and 2019 season to cause this performance uptick, sports betting became legalized and popular. 
+
+Diving a little further, in 2018 the MLB generated 10.3 billion dollars in revenue. In 2019, the year sports betting became legal, the revenue had a record increase to 10.7 billion dollars. Every year since then, revenue has been breaking records, which was forecasted during the debate surrounding the benefits of legalization of sports betting. Legalization of sports betting generates revenue, as many sportsbooks partner with the league and betting increases ticket and merchandise sales if the team is performing well and allowing betting to win.
+
+As of today, in the 6 years since the legalization of sports betting, the MLB has generated 1.1 billion dollars and there have been stories of players being banned from the league for self-betting. There have also been headline stories about record breaking contracts being offered to players. These examples illustrate how sports betting has added further monetary incentive to players to perform better, as they have opportunities to generate more income through higher contracts and self-betting. 
+ 
+## Next Steps
+
+From here, the next steps include forecast modeling to determine how much revenue will the MLB generate from sports betting, if player performance continues to increase. This will involve creating and compiling my own data sets, as specific betting data is not published by sports books. After this, the findings from this component and the modeling will be written formally and submitted to my thesis advisor.
+
+## References
+
+https://www.cbssports.com/mlb/news/mlb-gambling-scandal-explained-padres-tucupita-marcano-gets-lifetime-ban-for-baseball-bets-others-punished/ 
+
+https://brewerfanatic.com/blogs/entry/133-gambling-gains-and-player-pains-mlbs-double-play/ 
+
+https://www.bleedcubbieblue.com/2019/12/23/21035591/major-league-baseball-record-revenue-2019
+
